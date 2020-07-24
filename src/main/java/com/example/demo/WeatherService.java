@@ -8,8 +8,7 @@ public class WeatherService {
 
 
 	public WeatherResponse getCityWeather(String city) {
-		WeatherResponse response = new WeatherResponse();
-		response.setCurrentWeather("23C");
+		WeatherResponse response = new WeatherResponse("23C");
 		return response;
 	}
 

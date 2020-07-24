@@ -4,6 +4,7 @@ package com.example.demo;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.params.aggregator.ArgumentAccessException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -15,6 +16,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.util.NestedServletException;
+
 import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -36,9 +39,6 @@ public class WeatherControllerTest {
     @Captor
     private ArgumentCaptor<String> stringArgumentCaptor;
 
-    @Mock
-    private WeatherResponse mockResponse;
-
     @Before
     public void setup() {
 
@@ -48,16 +48,16 @@ public class WeatherControllerTest {
     @Test
     public void test_getCurrentWeather_success() throws Exception {
 
-        when(weatherService.getCityWeather(stringArgumentCaptor.capture())).thenReturn(mockResponse);
+        when(weatherService.getCityWeather(stringArgumentCaptor.capture())).thenReturn(new WeatherResponse("23C"));
 
         String url = "/api/v1/weather/{cityname}";
 
         MvcResult mvcResult = this.mockMvc.perform(get(url, "OMAHA")).andExpect(status().isOk()).andReturn();
 
         verify(weatherService, times(1)).getCityWeather(anyString());
-        //assertEquals("OMAHA", stringArgumentCaptor.getValue());
-        //assertEquals(HttpStatus.OK, mvcResult.getResponse().getStatus());
-        assertSame(mockResponse, mvcResult.getResponse());
+        assertEquals("OMAHA", stringArgumentCaptor.getValue());
+        assertEquals(HttpStatus.OK.value(), mvcResult.getResponse().getStatus());
+        assertEquals("{\"currentWeather\":\"23C\"}", mvcResult.getResponse().getContentAsString());
 
     }
 
@@ -71,8 +71,26 @@ public class WeatherControllerTest {
         MvcResult mvcResult = this.mockMvc.perform(get(url, "ABC").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNoContent()).andReturn();
 
         verify(weatherService, times(1)).getCityWeather(anyString());
-       // assertEquals("ABC", stringArgumentCaptor.getValue());
+        assertEquals("ABC", stringArgumentCaptor.getValue());
         assertEquals(HttpStatus.NO_CONTENT.value(), mvcResult.getResponse().getStatus());
 
     }
+
+    @Test(expected = Exception.class)
+    public void test_getCurrentWeather_failure_1() throws Exception {
+
+        when(weatherService.getCityWeather(stringArgumentCaptor.capture())).thenThrow(new NestedServletException(""));
+
+        String url = "/api/v1/weather/{cityname}";
+
+        MvcResult mvcResult = this.mockMvc.perform(get(url, "ABC").contentType(MediaType.APPLICATION_JSON)).andReturn();
+
+//        verify(weatherService, times(1)).getCityWeather(anyString());
+//        assertEquals("ABC", stringArgumentCaptor.getValue());
+//        assertEquals(HttpStatus.NO_CONTENT.value(), mvcResult.getResponse().getStatus());
+
+    }
+
+
+
 }
